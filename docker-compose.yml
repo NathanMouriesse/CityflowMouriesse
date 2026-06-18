@@ -1,0 +1,101 @@
+services:
+
+  # ─── MongoDB ──────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: cityflow-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-cityflow2025}
+    networks:
+      - cityflow-net
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: cityflow-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-cityflow2025}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-cityflow2025}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: student
+      ME_CONFIG_BASICAUTH_PASSWORD: nosql2025
+    depends_on:
+      - mongodb
+    networks:
+      - cityflow-net
+
+  # ─── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7.2
+    container_name: cityflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cityflow-net
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: cityflow-redisinsight
+    restart: unless-stopped
+    ports:
+      - "8001:5540"
+    depends_on:
+      - redis
+    networks:
+      - cityflow-net
+
+  # ─── Cassandra ────────────────────────────────────────────
+  cassandra:
+    image: cassandra:4.1
+    container_name: cityflow-cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: cityflow-cluster
+      CASSANDRA_DC: dc1
+    networks:
+      - cityflow-net
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # ─── Neo4j ────────────────────────────────────────────────
+  neo4j:
+    image: neo4j:5.18
+    container_name: cityflow-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-cityflow2025}
+    networks:
+      - cityflow-net
+
+volumes:
+  mongo_data:
+  redis_data:
+  cassandra_data:
+  neo4j_data:
+
+networks:
+  cityflow-net:
+    driver: bridge
