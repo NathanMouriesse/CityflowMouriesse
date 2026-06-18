@@ -1,66 +1,35 @@
-# CityFlow — Plateforme de mobilité urbaine
+CityFlow
 
-Projet fil rouge NoSQL — B3 INFO Tronc Commun — Ynov Campus Lyon 2025/2026
+VOTRE TOUR — Requêtes à produire
+Pour chacune des demandes suivantes, écrivez la requête MongoDB correspondante dans
+mongo-express, et notez-la dans votre fichier mes_requetes.md. Aucune requête ne vous est
+donnée toute faite.
 
-## Équipe
-- Nathan Mouriesse
 
-## Présentation
+Niveau 1 — Filtres simples
 
-CityFlow est une startup fictive qui développe une plateforme unifiée de mobilité urbaine pour la métropole de Lyon : covoiturage, transports en commun et vélos en libre-service depuis une seule application.
+1. Trouvez tous les utilisateurs entre 25 et 35 ans (inclus aux deux bornes). { "age": { "$gte": 25, "$lte": 35 } } J'utilise $gte et $lte pour faire un "entre 25 et 35".
 
-L'architecture repose sur une **persistance polyglotte** : chaque base de données est choisie pour son adéquation au type de données qu'elle stocke.
+2. Trouvez les utilisateurs dont l'email contient example.com (indice : opérateur $regex). { "email": { "$regex": "example\\.com" } }
+$regex c'est pour chercher un mot dans une chaîne, comme un Ctrl+F.
 
-| Base       | Rôle dans CityFlow                                          |
-|------------|-------------------------------------------------------------|
-| MongoDB    | Profils utilisateurs, trajets effectués, véhicules          |
-| Redis      | Cache stations, sessions, leaderboard, rate limiting        |
-| Cassandra  | Historique horodaté des passages, logs de connexions        |
-| Neo4j      | Réseau de transport, calcul d'itinéraires                   |
+3. Trouvez les utilisateurs qui ont exactement 2 adresses. { "addresses": { "$size": 2 } } $size pour vérifier qu'un tableau a exactement X éléments.
 
-## Lancement
+4. Trouvez les utilisateurs qui n'ont pas le champ preferences. { "preferences": { "$exists": false } }
+ $exists: false pour trouver les documents où le champ n'existe pas du tout. 
 
-```bash
-docker compose up -d
-```
+Niveau 2 — Combinaisons
+5. Trouvez les utilisateurs habitant Lyon OU Villeurbanne, et de plus de 25 ans. { "addresses.city": { "$in": ["Lyon", "Villeurbanne"] }, "age": { "$gt": 25 } }  $in c'est comme un "ou" sur une liste de valeurs.
 
-Puis vérifier que les 4 conteneurs sont `Up` :
+6. Trouvez les utilisateurs qui ont au moins une adresse de type home à Lyon. { "addresses": { "$elemMatch": { "type": "home", "city": "Lyon" } } } $elemMatch parce qu'on veut que le même élément du tableau vérifie les deux conditions en même temps. 
 
-```bash
-docker compose ps
-```
+7. Trouvez les utilisateurs qui ont les tags premium ET eco-friendly ensemble.{ "tags": { "$all": ["premium", "eco-friendly"] } } 7. $all pour vérifier que les deux tags sont présents ensemble.
 
-## Accès aux interfaces
-
-| Service        | URL                     | Identifiants               |
-|----------------|-------------------------|----------------------------|
-| mongo-express  | http://localhost:8081   | student / nosql2025        |
-| RedisInsight   | http://localhost:8001   | —                          |
-| Neo4j Browser  | http://localhost:7474   | neo4j / cityflow2025       |
-| Cassandra cqlsh| `docker exec -it cityflow-cassandra cqlsh` | — |
-
-## Structure du dépôt
-
-```
-cityflow/
-├── README.md
-├── docker-compose.yml
-├── .env.example
-├── architecture.md
-├── cassandra/
-├── mongodb/
-├── neo4j/
-├── queries/
-├── modelisation-cassandra.md
-├── modelisation-mongodb.md
-├── modelisation-neo4j.md
-└── modelisation-redis.md
-```
-
-## Documentation
-
-- [Architecture globale](architecture.md)
-- [Modélisation MongoDB](modelisation-mongodb.md)
-- [Modélisation Redis](modelisation-redis.md)
-- [Modélisation Cassandra](modelisation-cassandra.md)
-- [Modélisation Neo4j](modelisation-neo4j.md)
+Niveau 3 — Tri et pagination
+8. Affichez les 3 utilisateurs les plus âgés, en ne renvoyant que firstName, age et email.
+9. Affichez les utilisateurs triés par ville (alphabétique), puis par âge décroissant.
+10. Implémentez une pagination : page 2 avec 2 utilisateurs par page, triés par createdAt.
+Niveau 4 — Bonus pour les rapides
+11. Trouvez les utilisateurs vérifiés âgés de moins de 30 ans, n'habitant pas Lyon.
+12. Trouvez les utilisateurs dont au moins un tag commence par la lettre 'p' (indice : $regex dans
+un tableau).
